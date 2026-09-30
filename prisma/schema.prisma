@@ -1,0 +1,343 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  student
+  tutor
+  admin
+}
+
+enum UserStatus {
+  pending
+  active
+  inactive
+  rejected
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+}
+
+enum AdminAction {
+  accept
+  reject
+  login
+  logout
+}
+
+model User {
+  id                String     @id @default(uuid()) @db.Uuid
+  email             String     @unique
+  name              String
+  passwordHash      String     @map("password_hash")
+  role              UserRole
+  status            UserStatus @default(pending)
+  referredByTutorId String?    @map("referred_by_tutor_id") @db.Uuid
+  lastActiveAt      DateTime?  @map("last_active_at") @db.Timestamptz(3)
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tutor             Tutor?          @relation("TutorUser")
+  student           Student?
+  referredByTutor   Tutor?          @relation("TutorReferrals", fields: [referredByTutorId], references: [id], onDelete: SetNull)
+  sentMessages      Message[]       @relation("SentMessages")
+  receivedMessages  Message[]       @relation("ReceivedMessages")
+  referralLinksMade ReferralLink[]  @relation("ReferralLinkCreator")
+  passwordResets    PasswordReset[]
+  adminLogsAuthored AdminLog[]      @relation("AdminLogAdmin")
+  adminLogsTargeted AdminLog[]      @relation("AdminLogTarget")
+
+  @@unique([email, role])
+  @@index([status])
+  @@index([role, status])
+  @@map("users")
+}
+
+model Tutor {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  bio             String   @default("")
+  specialties     String[] @default([])
+  hourlyRate      Decimal  @default(0) @map("hourly_rate") @db.Decimal(10, 2)
+  profileImageUrl String?  @map("profile_image_url")
+  rating          Decimal  @default(0) @db.Decimal(3, 2)
+  totalReviews    Int      @default(0) @map("total_reviews")
+
+  user             User           @relation("TutorUser", fields: [userId], references: [id], onDelete: Cascade)
+  courses          Course[]
+  announcements    Announcement[]
+  referralLinks    ReferralLink[]
+  referredUsers    User[]         @relation("TutorReferrals")
+  reviews          Review[]
+
+  @@index([rating])
+  @@index([specialties], type: Gin, map: "tutors_specialties_idx")
+  @@map("tutors")
+}
+
+model Student {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  profileImageUrl String?  @map("profile_image_url")
+  learningGoals   String[] @default([]) @map("learning_goals")
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments   CourseEnrollment[]
+  batchStudents BatchStudent[]
+  submissions   Submission[]
+  reviews       Review[]
+
+  @@map("students")
+}
+
+model Course {
+  id            String   @id @default(uuid()) @db.Uuid
+  tutorId       String   @map("tutor_id") @db.Uuid
+  title         String
+  description   String
+  subject       String   @default("General")
+  price         Decimal  @default(0) @db.Decimal(10, 2)
+  discountPrice Decimal? @map("discount_price") @db.Decimal(10, 2)
+  isFree        Boolean  @default(false) @map("is_free")
+  isPublished   Boolean  @default(false) @map("is_published")
+  rating        Decimal  @default(0) @db.Decimal(3, 2)
+  totalReviews  Int      @default(0) @map("total_reviews")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tutor         Tutor              @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  enrollments   CourseEnrollment[]
+  batches       Batch[]
+  announcements Announcement[]
+  reviews       Review[]
+
+  @@index([tutorId])
+  @@index([isPublished, subject])
+  @@index([isPublished, rating])
+  @@map("courses")
+}
+
+model CourseEnrollment {
+  id                 String   @id @default(uuid()) @db.Uuid
+  studentId          String   @map("student_id") @db.Uuid
+  courseId           String   @map("course_id") @db.Uuid
+  enrolledAt         DateTime @default(now()) @map("enrolled_at") @db.Timestamptz(3)
+  progressPercentage Int      @default(0) @map("progress_percentage") @db.SmallInt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Restrict)
+
+  @@unique([studentId, courseId])
+  @@index([courseId])
+  @@map("course_enrollments")
+}
+
+model Batch {
+  id        String   @id @default(uuid()) @db.Uuid
+  courseId  String   @map("course_id") @db.Uuid
+  name      String
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+
+  course        Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  students      BatchStudent[]
+  lessons       Lesson[]
+  assignments   Assignment[]
+  announcements Announcement[]
+
+  @@index([courseId])
+  @@map("batches")
+}
+
+model BatchStudent {
+  id         String   @id @default(uuid()) @db.Uuid
+  batchId    String   @map("batch_id") @db.Uuid
+  studentId  String   @map("student_id") @db.Uuid
+  enrolledAt DateTime @default(now()) @map("enrolled_at") @db.Timestamptz(3)
+
+  batch      Batch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  student    Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  attendance Attendance[]
+
+  @@unique([batchId, studentId])
+  @@index([studentId])
+  @@map("batch_students")
+}
+
+model Lesson {
+  id              String    @id @default(uuid()) @db.Uuid
+  batchId         String    @map("batch_id") @db.Uuid
+  title           String
+  scheduledAt     DateTime  @map("scheduled_at") @db.Timestamptz(3)
+  durationMinutes Int       @map("duration_minutes")
+  description     String    @default("")
+  cancelledAt     DateTime? @map("cancelled_at") @db.Timestamptz(3)
+
+  batch      Batch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  attendance Attendance[]
+
+  @@index([batchId, scheduledAt])
+  @@map("lessons")
+}
+
+model Attendance {
+  id             String           @id @default(uuid()) @db.Uuid
+  lessonId       String           @map("lesson_id") @db.Uuid
+  batchStudentId String           @map("batch_student_id") @db.Uuid
+  status         AttendanceStatus
+
+  lesson       Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  batchStudent BatchStudent @relation(fields: [batchStudentId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, batchStudentId])
+  @@map("attendance")
+}
+
+model Assignment {
+  id          String   @id @default(uuid()) @db.Uuid
+  batchId     String   @map("batch_id") @db.Uuid
+  title       String
+  description String   @default("")
+  dueDate     DateTime @map("due_date") @db.Timestamptz(3)
+  maxScore    Int      @map("max_score")
+
+  batch       Batch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+
+  @@index([batchId, dueDate])
+  @@map("assignments")
+}
+
+model Submission {
+  id            String    @id @default(uuid()) @db.Uuid
+  assignmentId  String    @map("assignment_id") @db.Uuid
+  studentId     String    @map("student_id") @db.Uuid
+  submissionUrl String    @map("submission_url")
+  submittedAt   DateTime  @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  score         Int?
+  feedback      String?
+  gradedAt      DateTime? @map("graded_at") @db.Timestamptz(3)
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@index([studentId])
+  @@map("submissions")
+}
+
+/// Every announcement belongs to a course; batchId narrows it to one batch (null = course-wide).
+model Announcement {
+  id        String   @id @default(uuid()) @db.Uuid
+  courseId  String   @map("course_id") @db.Uuid
+  batchId   String?  @map("batch_id") @db.Uuid
+  tutorId   String   @map("tutor_id") @db.Uuid
+  title     String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  batch  Batch? @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  tutor  Tutor  @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, createdAt(sort: Desc)])
+  @@index([batchId, createdAt(sort: Desc)])
+  @@map("announcements")
+}
+
+model Message {
+  id          String    @id @default(uuid()) @db.Uuid
+  senderId    String    @map("sender_id") @db.Uuid
+  recipientId String    @map("recipient_id") @db.Uuid
+  content     String
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  readAt      DateTime? @map("read_at") @db.Timestamptz(3)
+
+  sender    User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, recipientId, createdAt])
+  @@index([recipientId, readAt])
+  @@map("messages")
+}
+
+model Review {
+  id        String   @id @default(uuid()) @db.Uuid
+  courseId  String   @map("course_id") @db.Uuid
+  tutorId   String   @map("tutor_id") @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  rating    Int      @db.SmallInt
+  comment   String   @default("")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  tutor   Tutor   @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId])
+  @@index([tutorId])
+  @@map("reviews")
+}
+
+model ReferralLink {
+  id                String   @id @default(uuid()) @db.Uuid
+  tutorId           String   @map("tutor_id") @db.Uuid
+  code              String   @unique
+  generatedByUserId String   @map("generated_by_user_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  usedCount         Int      @default(0) @map("used_count")
+
+  tutor       Tutor @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  generatedBy User  @relation("ReferralLinkCreator", fields: [generatedByUserId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId])
+  @@map("referral_links")
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash")
+  attempts  Int       @default(0) @db.SmallInt
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("password_resets")
+}
+
+model AdminLog {
+  id           String      @id @default(uuid()) @db.Uuid
+  adminId      String      @map("admin_id") @db.Uuid
+  action       AdminAction
+  targetUserId String?     @map("target_user_id") @db.Uuid
+  timestamp    DateTime    @default(now()) @db.Timestamptz(3)
+
+  admin      User  @relation("AdminLogAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  targetUser User? @relation("AdminLogTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([timestamp(sort: Desc)])
+  @@index([targetUserId])
+  @@map("admin_logs")
+}
+
+/// Fixed-window counters with lockout, keyed by e.g. "admin-login:<ip>". DB-backed so limits hold across serverless instances.
+model RateLimit {
+  key         String    @id
+  count       Int       @default(0)
+  windowStart DateTime  @default(now()) @map("window_start") @db.Timestamptz(3)
+  lockedUntil DateTime? @map("locked_until") @db.Timestamptz(3)
+
+  @@map("rate_limits")
+}
