@@ -52,6 +52,8 @@ model User {
   receivedMessages  Message[]       @relation("ReceivedMessages")
   referralLinksMade ReferralLink[]  @relation("ReferralLinkCreator")
   passwordResets    PasswordReset[]
+  announcementReads AnnouncementRead[]
+  loginEvents       LoginEvent[]
   adminLogsAuthored AdminLog[]      @relation("AdminLogAdmin")
   adminLogsTargeted AdminLog[]      @relation("AdminLogTarget")
 
@@ -118,6 +120,7 @@ model Course {
   batches       Batch[]
   announcements Announcement[]
   reviews       Review[]
+  materials     Material[]
 
   @@index([tutorId])
   @@index([isPublished, subject])
@@ -247,6 +250,7 @@ model Announcement {
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   batch  Batch? @relation(fields: [batchId], references: [id], onDelete: Cascade)
   tutor  Tutor  @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  reads  AnnouncementRead[]
 
   @@index([courseId, createdAt(sort: Desc)])
   @@index([batchId, createdAt(sort: Desc)])
@@ -340,4 +344,41 @@ model RateLimit {
   lockedUntil DateTime? @map("locked_until") @db.Timestamptz(3)
 
   @@map("rate_limits")
+}
+
+model AnnouncementRead {
+  announcementId String   @map("announcement_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  readAt         DateTime @default(now()) @map("read_at") @db.Timestamptz(3)
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, userId])
+  @@index([userId])
+  @@map("announcement_reads")
+}
+
+model LoginEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("login_events")
+}
+
+model Material {
+  id        String   @id @default(uuid()) @db.Uuid
+  courseId  String   @map("course_id") @db.Uuid
+  title     String
+  url       String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@map("materials")
 }

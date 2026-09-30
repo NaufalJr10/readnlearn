@@ -42,7 +42,10 @@ export const authOptions: NextAuthOptions = {
         await reset(limitKey);
         if (user.status !== "active") fail(user.status);
 
-        await db.user.update({ where: { id: user.id }, data: { lastActiveAt: new Date() } });
+        await db.$transaction([
+          db.user.update({ where: { id: user.id }, data: { lastActiveAt: new Date() } }),
+          db.loginEvent.create({ data: { userId: user.id } }),
+        ]);
         return { id: user.id, email: user.email, name: user.name, role: user.role };
       },
     }),

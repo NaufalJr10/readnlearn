@@ -9,6 +9,7 @@ export const POLICIES = {
   passwordResetRequest: { limit: 5, windowMs: 60 * 60_000, lockMs: 60 * 60_000 },
   referralLookup: { limit: 30, windowMs: 10 * 60_000, lockMs: 10 * 60_000 },
   contact: { limit: 5, windowMs: 60 * 60_000, lockMs: 60 * 60_000 },
+  messageSend: { limit: 40, windowMs: 60_000, lockMs: 60_000 },
 } satisfies Record<string, RateLimitPolicy>;
 
 export async function getLockRemainingMs(key: string) {

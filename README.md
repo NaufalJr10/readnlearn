@@ -10,7 +10,7 @@ cp .env.example .env          # then fill in secrets (see below)
 npm run db:deploy             # apply migrations
 npm run db:seed               # creates the single admin account
 npm run db:seed:demo          # optional: demo tutors, courses, students and reviews
-npm run dev
+npm run dev        # Next.js + Socket.io in one process (live chat)
 ```
 
 | Account | Login | Password |
@@ -22,7 +22,9 @@ npm run dev
 
 | Script | Purpose |
 | --- | --- |
-| `npm run dev` / `build` / `start` | Next.js |
+| `npm run dev` | Dev server with live chat (custom server: Next.js + Socket.io) |
+| `npm run build` then `npm start` | Production build and server (same custom server, so chat is live) |
+| `npm run dev:next` / `start:next` | Plain Next.js without Socket.io (chat falls back to polling) |
 | `npm run db:migrate` | Create and apply a migration from `prisma/schema.prisma` changes |
 | `npm run db:deploy` | Apply pending migrations (CI / production) |
 | `npm run db:seed` | Seed the admin account (idempotent) |
@@ -56,20 +58,25 @@ npm run dev
   - Unique `(student, course)` enrollments.
 - **API responses** always look like `{ data }` or `{ error: { code, message, fields? } }`.
 
+## Features by role
+
+**Student:** dashboard (progress, upcoming lessons, announcements, unread counts), my courses with lessons / assignments / materials, submit work by link, review courses, announcement inbox with read tracking, one-to-one chat with tutors.
+
+**Tutor:** dashboard, course create / edit / publish / delete (blocked while students are enrolled), batches with manual student assignment, lesson scheduling with edit and cancel, attendance per lesson plus history matrix, assignments and grading with feedback, announcements to a course or a single batch, course materials, analytics (charts with a table view), referral link, chat with enrolled students and message-history search.
+
+**Admin:** account approvals, audit log (see above).
+
+## More architecture notes
+
+- **Realtime:** `server.ts` runs Next.js and Socket.io on one port. Messages are validated, saved and emailed by normal API routes, which then push to the recipient over the socket. Sockets authenticate with the NextAuth session cookie. If sockets are unavailable, the chat polls every 12 seconds.
+- **Chat rules:** students can message any active tutor. Tutors can message students enrolled in their courses, or reply to a student who wrote first. Email goes out once per unread streak, not per message.
+- **Ownership:** every tutor query is scoped to the signed-in tutor (`src/lib/tutor-access.ts`), so another tutor's batch or course returns 404.
+- **Progress** is the share of a student's non-cancelled lessons they attended (present or late). It is recalculated whenever attendance, lessons or batch membership change.
+- **Submissions** are links (http or https only). File uploads would need S3 or R2, which is not wired up yet.
+- **Dates** are shown in each viewer's own timezone.
+
 ## Status
 
-Done:
-- Project setup
-- Schema and seeds
-- Public site: marketing pages, catalog, tutor directory, course and tutor profiles
-- Auth: signup with approval, login with status checks, password reset, referrals
-- Admin panel: pending accounts, accept/reject with emails, audit log, live badge
-- Free-course enrollment
-- Starter student and tutor dashboards
+Done: everything in the feature list above, plus the public site, auth and admin panel.
 
-Next:
-- Full student dashboard: lessons, announcements
-- Stripe checkout
-- Tutor tools: course, batch, lesson, attendance, assignment and announcement management
-- Socket.io messaging
-- Analytics
+Not built: Stripe checkout (paid courses cannot be bought yet, so revenue in analytics is an estimate), file uploads, user blocking in chat.

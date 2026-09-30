@@ -29,3 +29,16 @@ export function clientIp(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for");
   return forwarded?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
 }
+
+export async function parseBody<S extends z.ZodType>(request: Request, schema: S): Promise<{ data: z.output<S> } | { response: NextResponse }> {
+  const parsed = schema.safeParse(await readJson(request));
+  return parsed.success ? { data: parsed.data } : { response: validationFailed(parsed.error as z.ZodError) };
+}
+
+export const unauthorized = () => fail(401, "unauthorized", "Please log in to continue.");
+export const forbidden = (message = "You don't have access to this.") => fail(403, "forbidden", message);
+export const notFound = (message = "We couldn't find that.") => fail(404, "not_found", message);
+
+export function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
