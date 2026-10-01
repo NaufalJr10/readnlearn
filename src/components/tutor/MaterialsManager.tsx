@@ -4,6 +4,7 @@ import { ExternalLink, FileText, Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useApiMutation } from "@/lib/use-api-mutation";
 import { Button } from "../ui/Button";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { EmptyState } from "../ui/EmptyState";
 import { Field } from "../ui/Field";
 import { Input } from "../ui/Input";
@@ -13,6 +14,7 @@ type Material = { id: string; title: string; url: string };
 export function MaterialsManager({ courseId, materials }: { courseId: string; materials: Material[] }) {
   const { run, loading, error } = useApiMutation();
   const [removing, setRemoving] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<Material | null>(null);
   const [formKey, setFormKey] = useState(0);
 
   async function add(event: FormEvent<HTMLFormElement>) {
@@ -26,6 +28,7 @@ export function MaterialsManager({ courseId, materials }: { courseId: string; ma
     setRemoving(id);
     await run(`/api/tutor/materials/${id}`, { method: "DELETE", success: "Material removed" });
     setRemoving(null);
+    setConfirming(null);
   }
 
   return (
@@ -41,13 +44,27 @@ export function MaterialsManager({ courseId, materials }: { courseId: string; ma
                 <span className="truncate">{m.title}</span>
                 <ExternalLink className="size-3.5 shrink-0 text-fg-subtle" aria-hidden />
               </a>
-              <Button variant="ghost" size="sm" onClick={() => remove(m.id)} loading={removing === m.id} aria-label={`Remove ${m.title}`} className="hover:bg-danger-soft hover:text-danger">
-                {removing !== m.id && <Trash2 className="size-4" aria-hidden />}
+              <Button variant="ghost" size="sm" onClick={() => setConfirming(m)} aria-label={`Remove ${m.title}`} title="Remove material" className="hover:bg-danger-soft hover:text-danger">
+                <Trash2 className="size-4" aria-hidden />
               </Button>
             </li>
           ))}
         </ul>
       )}
+      <ConfirmDialog
+        open={!!confirming}
+        tone="danger"
+        title="Remove this material?"
+        description={
+          <>
+            <strong className="text-fg">{confirming?.title}</strong> will be removed from the course and enrolled students will no longer see it.
+          </>
+        }
+        confirmLabel="Remove material"
+        loading={!!removing}
+        onConfirm={() => confirming && remove(confirming.id)}
+        onCancel={() => setConfirming(null)}
+      />
       <form key={formKey} onSubmit={add} className="grid gap-4 rounded-2xl border border-border bg-surface p-4 shadow-card sm:grid-cols-[1fr_1.4fr_auto] sm:items-start" noValidate>
         <Field id="material-title" label="Title" error={error("title")}>
           <Input id="material-title" name="title" required maxLength={120} placeholder="Week 1 slides" invalid={!!error("title")} describedBy={error("title") ? "material-title-error" : undefined} />

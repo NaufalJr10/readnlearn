@@ -6,7 +6,9 @@ import { useApiMutation } from "@/lib/use-api-mutation";
 import { cn } from "@/lib/utils";
 import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { EmptyState } from "../ui/EmptyState";
+import { LocalTime } from "../ui/LocalTime";
 
 type Status = "present" | "late" | "absent";
 type Row = { batchStudentId: string; name: string; email: string; status: Status | null };
@@ -17,8 +19,9 @@ const options: { value: Status; label: string; active: string }[] = [
   { value: "absent", label: "Absent", active: "border-danger bg-danger-soft text-danger" },
 ];
 
-export function AttendanceForm({ lessonId, rows, disabled }: { lessonId: string; rows: Row[]; disabled?: boolean }) {
+export function AttendanceForm({ lessonId, scheduledAt, rows, disabled }: { lessonId: string; scheduledAt: string; rows: Row[]; disabled?: boolean }) {
   const { run, loading } = useApiMutation();
+  const [confirmEarly, setConfirmEarly] = useState(false);
   const [statuses, setStatuses] = useState<Record<string, Status | null>>(() => Object.fromEntries(rows.map((r) => [r.batchStudentId, r.status])));
 
   if (rows.length === 0) {
@@ -27,7 +30,13 @@ export function AttendanceForm({ lessonId, rows, disabled }: { lessonId: string;
 
   const marked = Object.values(statuses).filter(Boolean).length;
 
+  function trySave() {
+    if (new Date(scheduledAt).getTime() > Date.now()) setConfirmEarly(true);
+    else void save();
+  }
+
   async function save() {
+    setConfirmEarly(false);
     const records = Object.entries(statuses)
       .filter((entry): entry is [string, Status] => entry[1] !== null)
       .map(([batchStudentId, status]) => ({ batchStudentId, status }));
@@ -80,10 +89,26 @@ export function AttendanceForm({ lessonId, rows, disabled }: { lessonId: string;
         ))}
       </ul>
       <div className="mt-6 flex justify-end">
-        <Button size="lg" onClick={save} loading={loading} disabled={disabled || marked === 0}>
+        <Button size="lg" onClick={trySave} loading={loading} disabled={disabled || marked === 0}>
           Save attendance
         </Button>
       </div>
+      <ConfirmDialog
+        open={confirmEarly}
+        tone="danger"
+        title="This lesson hasn't started yet"
+        description={
+          <>
+            This lesson is scheduled for <strong className="text-fg">
+              <LocalTime iso={scheduledAt} />
+            </strong>, which is still in the future. Are you sure you want to take attendance now?
+          </>
+        }
+        confirmLabel="Save anyway"
+        loading={loading}
+        onConfirm={save}
+        onCancel={() => setConfirmEarly(false)}
+      />
     </div>
   );
 }

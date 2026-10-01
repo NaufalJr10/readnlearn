@@ -1,10 +1,15 @@
 import { z } from "zod";
 
+// Links typed without a scheme (youtube.com/watch?v=…) get https:// prepended. A scheme followed by a
+// non-digit (javascript:, ftp:, data:) is left alone so the check below rejects it; "host:8080" is not a scheme.
+const withDefaultScheme = (value: string) => (/^[a-z][a-z0-9+.-]*:(?!\d)/i.test(value) || value.startsWith("//") ? value : `https://${value}`);
+
 // Only http(s): z.url() alone would accept javascript: links that tutors and students later click.
 export const httpUrl = z
   .string()
   .trim()
   .max(2000)
+  .transform((value) => (value ? withDefaultScheme(value) : value))
   .pipe(z.url("Enter a valid link"))
   .refine((value) => /^https?:\/\//i.test(value), "Links must start with http:// or https://");
 

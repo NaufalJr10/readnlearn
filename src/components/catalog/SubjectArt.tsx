@@ -12,6 +12,10 @@ const subjects: Record<string, { icon: LucideIcon; gradient: string }> = {
 
 const fallback = { icon: BookOpen, gradient: "from-violet-500 via-purple-600 to-indigo-700" };
 
+export function subjectStyle(subject: string) {
+  return subjects[subject] ?? fallback;
+}
+
 export function SubjectArt({ subject, className }: { subject: string; className?: string }) {
   const { icon: Icon, gradient } = subjects[subject] ?? fallback;
   return (

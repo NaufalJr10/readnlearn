@@ -9,6 +9,7 @@ import { Field } from "../ui/Field";
 import { Input } from "../ui/Input";
 import { PasswordInput } from "../ui/PasswordInput";
 import { useToast } from "../ui/ToastProvider";
+import { AccountCreated } from "./AccountCreated";
 import { PendingApproval } from "./PendingApproval";
 import { RoleOption } from "./RoleOption";
 
@@ -20,23 +21,23 @@ export function SignupForm({ initialRole, referral }: SignupFormProps) {
   const [role, setRole] = useState<Role>(initialRole);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
-  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState<{ email: string; status: "pending" | "active" } | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget));
     setLoading(true);
-    const result = await fetchJson("/api/account/signup", { method: "POST", json: { ...data, role, referralCode: referral?.code } });
+    const result = await fetchJson<{ status: "pending" | "active" }>("/api/account/signup", { method: "POST", json: { ...data, role, referralCode: referral?.code } });
     setLoading(false);
     if (result.ok) {
-      setSubmittedEmail(String(data.email));
+      setSubmitted({ email: String(data.email), status: result.data.status });
       return;
     }
     setErrors(result.fields ?? {});
     if (!result.fields) toast({ tone: "error", title: "Couldn't create your account", description: result.message });
   }
 
-  if (submittedEmail) return <PendingApproval email={submittedEmail} />;
+  if (submitted) return submitted.status === "pending" ? <PendingApproval email={submitted.email} /> : <AccountCreated />;
 
   const err = (name: string) => errors[name]?.[0];
 
@@ -88,7 +89,7 @@ export function SignupForm({ initialRole, referral }: SignupFormProps) {
       <Button type="submit" size="lg" loading={loading} className="w-full">
         Create {role} account
       </Button>
-      <p className="text-center text-xs text-fg-subtle">New accounts are reviewed by an admin before you can log in.</p>
+      <p className="text-center text-xs text-fg-subtle">{role === "tutor" ? "Tutor accounts are reviewed by an admin before you can log in." : "You can log in as soon as your account is created."}</p>
     </form>
   );
 }

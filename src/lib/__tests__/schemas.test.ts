@@ -29,6 +29,10 @@ describe("courseSchema", () => {
 
 describe("httpUrl", () => {
   it.each(["https://example.com/work", "http://example.com"])("accepts %s", (url) => expect(httpUrl.safeParse(url).success).toBe(true));
+  it("adds https:// to links typed without a scheme", () => {
+    expect(httpUrl.parse("youtube.com/watch?v=0lbo_9fB7XY")).toBe("https://youtube.com/watch?v=0lbo_9fB7XY");
+    expect(httpUrl.parse("www.example.com")).toBe("https://www.example.com");
+  });
   it.each(["javascript:alert(1)", "ftp://example.com", "data:text/html,hi", "not a url", ""])("rejects %p", (url) => expect(httpUrl.safeParse(url).success).toBe(false));
 });
 

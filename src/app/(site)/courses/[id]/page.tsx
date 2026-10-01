@@ -77,10 +77,12 @@ export default async function CoursePage({ params }: PageProps<"/courses/[id]">)
             <div className="mt-4 flex items-center gap-4">
               <Avatar name={course.tutor.name} className="size-16 text-xl" />
               <div>
-                <Link href={`/tutors/${course.tutor.id}`} className="text-xl font-bold transition-colors hover:text-primary">
+                <Link href={`/tutors/${course.tutor.id}`} className="block text-xl font-bold transition-colors hover:text-primary">
                   {course.tutor.name}
                 </Link>
-                <RatingStars rating={course.tutor.rating} reviews={course.tutor.totalReviews} />
+                <div className="mt-1">
+                  <RatingStars rating={course.tutor.rating} reviews={course.tutor.totalReviews} />
+                </div>
               </div>
             </div>
             {course.tutor.bio && <p className="mt-4 text-fg-muted">{course.tutor.bio}</p>}

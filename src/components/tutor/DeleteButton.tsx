@@ -7,10 +7,10 @@ import { useApiMutation } from "@/lib/use-api-mutation";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 
-type DeleteButtonProps = { url: string; label: string; title: string; description: ReactNode; confirmLabel: string; success: string; redirectTo: string };
+type DeleteButtonProps = { url: string; label: string; title: string; description: ReactNode; confirmLabel: string; success: string; redirectTo: string; requireText?: string };
 
 /** A destructive action with a confirmation dialog that navigates away once the resource is gone. */
-export function DeleteButton({ url, label, title, description, confirmLabel, success, redirectTo }: DeleteButtonProps) {
+export function DeleteButton({ url, label, title, description, confirmLabel, success, redirectTo, requireText }: DeleteButtonProps) {
   const router = useRouter();
   const { run, loading } = useApiMutation();
   const [open, setOpen] = useState(false);
@@ -27,7 +27,7 @@ export function DeleteButton({ url, label, title, description, confirmLabel, suc
         <Trash2 className="size-4" aria-hidden />
         {label}
       </Button>
-      <ConfirmDialog open={open} tone="danger" title={title} description={description} confirmLabel={confirmLabel} loading={loading} onConfirm={remove} onCancel={() => setOpen(false)} />
+      <ConfirmDialog open={open} tone="danger" title={title} description={description} confirmLabel={confirmLabel} loading={loading} requireText={requireText} onConfirm={remove} onCancel={() => setOpen(false)} />
     </>
   );
 }

@@ -59,7 +59,14 @@ export async function getTutorBatchDetail(tutorId: string, batchId: string) {
   const candidates = await db.courseEnrollment.findMany({
     where: { courseId: batch.courseId, student: { batchStudents: { none: { batchId } } } },
     orderBy: { enrolledAt: "asc" },
-    include: { student: { include: { user: { select: { name: true, email: true } } } } },
+    include: {
+      student: {
+        include: {
+          user: { select: { name: true, email: true } },
+          batchStudents: { where: { batch: { courseId: batch.courseId } }, select: { batch: { select: { name: true } } } },
+        },
+      },
+    },
   });
   return { batch, candidates };
 }

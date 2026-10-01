@@ -1,9 +1,10 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
+import { Input } from "./Input";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -12,14 +13,23 @@ type ConfirmDialogProps = {
   description: ReactNode;
   confirmLabel: string;
   loading?: boolean;
+  /** When set, the user must type this exact text before the confirm button is enabled. */
+  requireText?: string;
   onConfirm: () => void;
   onCancel: () => void;
 };
 
-export function ConfirmDialog({ open, tone, title, description, confirmLabel, loading, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ open, tone, title, description, confirmLabel, loading, requireText, onConfirm, onCancel }: ConfirmDialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descId = useId();
+  const inputId = useId();
+  const [typed, setTyped] = useState("");
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (!open) setTyped("");
+  }
 
   useEffect(() => {
     const dialog = ref.current;
@@ -54,11 +64,19 @@ export function ConfirmDialog({ open, tone, title, description, confirmLabel, lo
         <div id={descId} className="mt-2 text-fg-muted">
           {description}
         </div>
+        {requireText && (
+          <div className="mt-5">
+            <label htmlFor={inputId} className="text-sm font-semibold">
+              Type <span className="select-all rounded bg-danger-soft px-1.5 py-0.5 font-bold text-danger">{requireText}</span> to confirm
+            </label>
+            <Input id={inputId} className="mt-2" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" spellCheck={false} disabled={loading} />
+          </div>
+        )}
         <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button variant="secondary" onClick={onCancel} disabled={loading} autoFocus>
             Cancel
           </Button>
-          <Button variant={tone} onClick={onConfirm} loading={loading}>
+          <Button variant={tone} onClick={onConfirm} loading={loading} disabled={!!requireText && typed.trim() !== requireText}>
             {confirmLabel}
           </Button>
         </div>

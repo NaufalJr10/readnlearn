@@ -16,6 +16,8 @@ export async function POST(request: Request) {
 
   const referral = referralCode ? await db.referralLink.findUnique({ where: { code: referralCode.toLowerCase() } }) : null;
   const passwordHash = await bcrypt.hash(password, 12);
+  // Only tutors need admin review; students can log in straight away.
+  const status = role === "tutor" ? "pending" : "active";
 
   try {
     await db.$transaction(async (tx) => {
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
           name,
           passwordHash,
           role,
-          status: "pending",
+          status,
           referredByTutorId: referral?.tutorId ?? null,
           ...(role === "tutor" ? { tutor: { create: {} } } : { student: { create: {} } }),
         },
@@ -39,6 +41,6 @@ export async function POST(request: Request) {
     throw error;
   }
 
-  void emails.signupPendingAdmin({ name, email, role });
-  return ok({ status: "pending" }, { status: 201 });
+  if (status === "pending") void emails.signupPendingAdmin({ name, email, role });
+  return ok({ status }, { status: 201 });
 }

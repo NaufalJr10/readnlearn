@@ -107,6 +107,80 @@
     from { background-position: -200% 0; }
     to { background-position: 200% 0; }
   }
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-grow-x: grow-x 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-sheen: sheen 3.2s ease-in-out infinite;
+  --animate-pop: pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-typing: typing 1s ease-in-out infinite;
+  --animate-fade-out: fade-out 0.2s ease-out both;
+  --animate-drift: drift 14s ease-in-out infinite;
+  --animate-gradient-x: gradient-x 8s ease-in-out infinite;
+  --animate-spin-slow: spin 18s linear infinite;
+
+  @keyframes gradient-x {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes grow-x {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  @keyframes sheen {
+    0% { transform: translateX(-100%); }
+    55%, 100% { transform: translateX(300%); }
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-3px); opacity: 1; }
+  }
+  @keyframes fade-out {
+    to { opacity: 0; visibility: hidden; }
+  }
+  @keyframes drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(4%, -3%) scale(1.06); }
+  }
+}
+
+/* Scroll reveal (driven by <ScrollReveal />). Hidden only once JS is ready. */
+[data-reveal] {
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    translate 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+html[data-reveal-ready] [data-reveal]:not([data-revealed]) {
+  opacity: 0;
+  translate: 0 28px;
+}
+
+/* Animated integer for the hero progress counter (CSS-only count-up). */
+@property --count {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+@keyframes count-up {
+  from { --count: 0; }
+}
+.count-up {
+  --count: var(--count-to);
+  counter-reset: count var(--count);
+  animation: count-up 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  font-variant-numeric: tabular-nums;
+}
+.count-up::after {
+  content: counter(count) "%";
 }
 
 @layer base {
@@ -148,6 +222,8 @@
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-delay: 0ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }

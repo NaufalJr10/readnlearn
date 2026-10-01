@@ -34,7 +34,7 @@ export function LessonFormDialog({ batchId, lesson }: LessonFormDialogProps) {
   return (
     <>
       {lesson ? (
-        <Button variant="ghost" size="sm" onClick={() => setOpen(true)} aria-label={`Edit ${lesson.title}`}>
+        <Button variant="ghost" size="sm" onClick={() => setOpen(true)} aria-label={`Edit ${lesson.title}`} title="Edit lesson">
           <Pencil className="size-4" aria-hidden />
         </Button>
       ) : (

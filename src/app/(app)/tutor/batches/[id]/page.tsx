@@ -59,12 +59,13 @@ export default async function TutorBatchPage({ params }: PageProps<"/tutor/batch
             <DeleteButton
               url={`/api/tutor/batches/${batch.id}`}
               label="Delete"
-              title="Delete this batch?"
+              title="Permanently delete this batch?"
               description={
                 <>
-                  <strong className="text-fg">{batch.name}</strong> and its lessons, attendance and assignments will be permanently removed. Students stay enrolled in the course.
+                  <strong className="text-danger">This cannot be undone.</strong> Deleting <strong className="text-fg">{batch.name}</strong> will permanently erase all of its lessons, attendance records and assignments (including students&apos; submissions and grades). Students stay enrolled in the course, but everything tied to this batch is gone for good.
                 </>
               }
+              requireText={batch.name}
               confirmLabel="Delete batch"
               success="Batch deleted"
               redirectTo={`/tutor/courses/${batch.course.id}`}
@@ -77,7 +78,7 @@ export default async function TutorBatchPage({ params }: PageProps<"/tutor/batch
         <BatchStudentsManager
           batchId={batch.id}
           members={batch.students.map((s) => ({ studentId: s.studentId, name: s.student.user.name, email: s.student.user.email }))}
-          candidates={candidates.map((c) => ({ studentId: c.studentId, name: c.student.user.name, email: c.student.user.email }))}
+          candidates={candidates.map((c) => ({ studentId: c.studentId, name: c.student.user.name, email: c.student.user.email, otherBatch: c.student.batchStudents[0]?.batch.name }))}
         />
       </Section>
 
@@ -150,8 +151,8 @@ export default async function TutorBatchPage({ params }: PageProps<"/tutor/batch
                     Student
                   </th>
                   {heldLessons.map((l) => (
-                    <th key={l.id} scope="col" className="px-3 py-3 text-center font-semibold">
-                      <span className="block max-w-24 truncate" title={l.title}>
+                    <th key={l.id} scope="col" className="px-3 py-3 text-center align-middle font-semibold">
+                      <span className="mx-auto block min-w-28 max-w-48 text-balance break-words text-center text-base font-bold text-fg" title={l.title}>
                         {l.title}
                       </span>
                       <LocalTime iso={l.scheduledAt.toISOString()} style="date" className="block font-normal" />

@@ -17,7 +17,7 @@ export function LessonCancelButton({ lessonId, title }: { lessonId: string; titl
 
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={() => setOpen(true)} aria-label={`Cancel ${title}`} className="hover:bg-danger-soft hover:text-danger">
+      <Button variant="ghost" size="sm" onClick={() => setOpen(true)} aria-label={`Cancel ${title}`} title="Cancel lesson" className="hover:bg-danger-soft hover:text-danger">
         <Ban className="size-4" aria-hidden />
       </Button>
       <ConfirmDialog

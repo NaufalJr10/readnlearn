@@ -44,6 +44,7 @@ export default async function LessonAttendancePage({ params }: PageProps<"/tutor
       </div>
       <AttendanceForm
         lessonId={lesson.id}
+        scheduledAt={lesson.scheduledAt.toISOString()}
         disabled={!!lesson.cancelledAt}
         rows={lesson.batch.students.map((s) => ({
           batchStudentId: s.id,

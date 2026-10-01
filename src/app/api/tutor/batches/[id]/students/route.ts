@@ -20,6 +20,15 @@ export async function POST(request: Request, ctx: RouteContext<"/api/tutor/batch
   const enrolled = await db.courseEnrollment.count({ where: { courseId: batch.courseId, studentId: { in: studentIds } } });
   if (enrolled !== studentIds.length) return fail(422, "not_enrolled", "Only students enrolled in this course can be added to its batches.");
 
+  const elsewhere = await db.batchStudent.findMany({
+    where: { studentId: { in: studentIds }, batchId: { not: id }, batch: { courseId: batch.courseId } },
+    select: { student: { select: { user: { select: { name: true } } } }, batch: { select: { name: true } } },
+  });
+  if (elsewhere.length > 0) {
+    const names = elsewhere.map((e) => `${e.student.user.name} (${e.batch.name})`).join(", ");
+    return fail(409, "already_in_batch", `${elsewhere.length === 1 ? "This student is" : "These students are"} already in another batch of this course: ${names}. Remove them from that batch first.`);
+  }
+
   const created = await db.batchStudent.createMany({ data: studentIds.map((studentId) => ({ batchId: id, studentId })), skipDuplicates: true });
   await Promise.all(studentIds.map((studentId) => recomputeProgress(studentId, batch.courseId)));
   return ok({ added: created.count }, { status: 201 });

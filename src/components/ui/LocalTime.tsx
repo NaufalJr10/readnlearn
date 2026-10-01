@@ -5,7 +5,7 @@ import { useSyncExternalStore } from "react";
 type Style = "datetime" | "date" | "time" | "weekday";
 
 const options: Record<Style, Intl.DateTimeFormatOptions> = {
-  datetime: { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" },
+  datetime: { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" },
   date: { month: "short", day: "numeric", year: "numeric" },
   time: { hour: "numeric", minute: "2-digit" },
   weekday: { weekday: "long", month: "long", day: "numeric" },
@@ -18,7 +18,7 @@ export function LocalTime({ iso, style = "datetime", className, utc }: { iso: st
   const label = useSyncExternalStore(
     subscribe,
     () => new Intl.DateTimeFormat("en-US", { ...options[style], ...(utc ? { timeZone: "UTC" } : {}) }).format(new Date(iso)),
-    () => `${new Intl.DateTimeFormat("en-US", { ...options[style], timeZone: "UTC" }).format(new Date(iso))}${style === "date" || utc ? "" : " UTC"}`,
+    () => new Intl.DateTimeFormat("en-US", { ...options[style], timeZone: "UTC" }).format(new Date(iso)),
   );
   return (
     <time dateTime={iso} className={className} suppressHydrationWarning>

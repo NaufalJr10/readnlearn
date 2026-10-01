@@ -35,7 +35,7 @@ export function LessonRow({ title, scheduledAt, durationMinutes, context, cancel
         </p>
       </div>
       {actions}
-      {cancelled ? <Badge tone="danger">Cancelled</Badge> : status ? <Badge tone={statusTone[status]} className="capitalize">{status}</Badge> : past ? <Badge>Past</Badge> : null}
+      {cancelled ? <Badge tone="danger">Cancelled</Badge> : status ? <Badge tone={statusTone[status]} className="capitalize">{status}</Badge> : past ? <Badge tone="warning">Past</Badge> : <Badge tone="primary">Upcoming</Badge>}
     </li>
   );
 }

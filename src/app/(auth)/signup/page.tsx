@@ -24,7 +24,7 @@ export default async function SignupPage({ searchParams }: PageProps<"/signup">)
   return (
     <div className="animate-fade-up">
       <h1 className="text-3xl font-extrabold sm:text-4xl">Create your account</h1>
-      <p className="mt-2 text-fg-muted">Join as a student or tutor. Our team reviews every new account to keep ReadnLearn safe.</p>
+      <p className="mt-2 text-fg-muted">Join as a student and start learning right away, or apply to teach. Our team reviews every tutor account to keep ReadnLearn safe.</p>
       <div className="mt-8">
         <SignupForm initialRole={initialRole} referral={referral} />
       </div>
