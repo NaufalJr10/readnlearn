@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { CalendarClock, CheckCircle2, Flame, MessageCircle, Sparkles, TrendingUp } from "lucide-react";
+import { CalendarClock, CheckCircle2, MessageCircle, Sparkles, TrendingUp } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 
 const PROGRESS = 68;
@@ -17,14 +17,6 @@ export function HeroVisual() {
       <div className="absolute -inset-6 -z-10 overflow-hidden rounded-[2.5rem] blur-2xl">
         <div className="animate-drift absolute inset-0 bg-gradient-to-br from-primary/25 via-accent/15 to-transparent" />
         <div className="animate-drift absolute -right-10 -bottom-10 size-56 rounded-full bg-accent/20 [animation-delay:-7s]" />
-      </div>
-
-      {/* Streak chip */}
-      <div className="animate-fade-up absolute -top-4 left-6 z-10 hidden [animation-delay:600ms] sm:block">
-        <div className="animate-float flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold shadow-lift [animation-delay:-2s]">
-          <Flame className="size-3.5 text-warning" />
-          7-day streak
-        </div>
       </div>
 
       {/* Main progress card */}
@@ -88,7 +80,7 @@ export function HeroVisual() {
 
       {/* Tutor message: typing indicator, then the message lands */}
       <div className="animate-fade-up absolute bottom-0 -left-4 hidden w-64 [animation-delay:350ms] sm:block lg:-left-10">
-        <div className="animate-float rounded-2xl border border-border bg-surface p-4 shadow-lift [animation-delay:-4s]">
+        <div className="rounded-2xl border border-border bg-surface p-4 shadow-lift">
           <div className="flex items-center gap-3">
             <span className="relative">
               <Avatar name="Amara Okafor" className="size-10 text-sm" />
@@ -115,7 +107,7 @@ export function HeroVisual() {
 
       {/* Score badge */}
       <div className="animate-pop absolute -right-3 top-[58%] hidden [animation-delay:1.1s] sm:block lg:-right-8">
-        <div className="animate-float relative rounded-2xl border border-border bg-surface px-4 py-3 shadow-lift">
+        <div className="relative rounded-2xl border border-border bg-surface px-4 py-3 shadow-lift">
           <Sparkles className="absolute -top-2 -right-2 size-5 animate-pulse text-warning" />
           <p className="text-xs text-fg-subtle">Assignment score</p>
           <p className="bg-gradient-to-r from-success to-teal-500 bg-clip-text font-display text-xl font-extrabold text-transparent">A+</p>

@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { unstable_cache } from "next/cache";
 import Form from "next/form";
 import Link from "next/link";
 import {
@@ -26,7 +27,19 @@ import { Avatar } from "@/components/ui/Avatar";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { featuredCourses, listSubjects, platformStats } from "@/lib/catalog";
 
-export const revalidate = 300;
+// Rendered per request so `next build` never needs a database (the Docker image is built in CI without one).
+// The queries are cached for 5 minutes instead, which keeps the old ISR behaviour at runtime.
+export const dynamic = "force-dynamic";
+
+const getHomeData = unstable_cache(
+  async () => {
+    const [courses, stats, subjects] = await Promise.all([featuredCourses(), platformStats(), listSubjects()]);
+    // The cache stores JSON, so turn the Prisma Decimal into a plain number before it goes in.
+    return { courses, subjects, stats: { ...stats, averageRating: stats.averageRating === null ? null : Number(stats.averageRating) } };
+  },
+  ["home-page"],
+  { revalidate: 300 },
+);
 
 const steps = [
   { icon: Search, title: "Discover", text: "Browse courses and tutors by subject, price and rating until something clicks." },
@@ -50,8 +63,8 @@ const faqs = [
 const reveal = (delayMs = 0) => ({ "--reveal-delay": `${delayMs}ms` }) as CSSProperties;
 
 export default async function HomePage() {
-  const [courses, stats, subjects] = await Promise.all([featuredCourses(), platformStats(), listSubjects()]);
-  const rating = stats.averageRating ? Number(stats.averageRating) : null;
+  const { courses, stats, subjects } = await getHomeData();
+  const rating = stats.averageRating || null;
 
   return (
     <>
@@ -67,12 +80,12 @@ export default async function HomePage() {
 
         <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 pb-20 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:px-8 lg:pb-28 lg:pt-20">
           <div>
-            <p className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 py-1.5 pl-1.5 pr-3.5 text-sm font-semibold text-fg shadow-sm backdrop-blur">
+            {/* <p className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 py-1.5 pl-1.5 pr-3.5 text-sm font-semibold text-fg shadow-sm backdrop-blur">
               <span className="flex size-6 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-white">
                 <Sparkles className="size-3.5" aria-hidden />
               </span>
               Learning that feels personal
-            </p>
+            </p> */}
             <h1 className="animate-fade-up mt-6 text-4xl font-extrabold sm:text-5xl lg:text-6xl [animation-delay:60ms]">
               Learn anything with a tutor who{" "}
               <span className="animate-gradient-x bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] bg-clip-text text-transparent">
